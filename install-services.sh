@@ -31,7 +31,7 @@ fi
 
 # ---------- 2. 安装 manager-web 依赖 ----------
 echo "==> 安装 manager-web 依赖..."
-su - "${SERVICE_USER}" -s /bin/bash -c "cd ${PROJECT_DIR}/main/manager-web && npm install --production 2>/dev/null || npm install"
+su - "${SERVICE_USER}" -s /bin/bash -c "cd ${PROJECT_DIR}/main/manager-web && npm install"
 
 # ---------- 3. 检测 xiaozhi-server conda 环境 ----------
 echo "==> 检测 conda..."
