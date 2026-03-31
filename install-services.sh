@@ -12,6 +12,10 @@ SERVICE_USER="${SUDO_USER:-$(whoami)}"
 echo "==> 项目目录: ${PROJECT_DIR}"
 echo "==> 运行用户: ${SERVICE_USER}"
 
+# ---------- 0. 修正项目目录权限 ----------
+echo "==> 修正项目目录权限..."
+chown -R "${SERVICE_USER}:${SERVICE_USER}" "${PROJECT_DIR}"
+
 # ---------- 1. 安装 manager-api 依赖 ----------
 echo "==> 检查 JDK 21..."
 if ! java -version 2>&1 | grep -q "21"; then
