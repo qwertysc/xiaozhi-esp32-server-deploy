@@ -42,45 +42,28 @@ echo "==> 安装 manager-web 依赖..."
 su - "${SERVICE_USER}" -s /bin/bash -c "cd ${PROJECT_DIR}/main/manager-web && npm install --production 2>/dev/null || npm install"
 
 # ---------- 5. 安装 xiaozhi-server 依赖 ----------
-echo "==> 安装 xiaozhi-server 依赖..."
+echo "==> 跳过 conda/pip 安装（假设已手动完成）"
 
-# 检查 conda
+# 自动检测 conda 环境路径并更新 service 文件
 CONDA_BIN="$(command -v conda 2>/dev/null || true)"
 if [ -z "${CONDA_BIN}" ]; then
-    # 尝试常见路径
     for p in /root/miniconda3/bin/conda /home/*/miniconda3/bin/conda /opt/conda/bin/conda /root/anaconda3/bin/conda; do
         [ -f "${p}" ] && CONDA_BIN="${p}" && break
     done
 fi
 
-if [ -z "${CONDA_BIN}" ]; then
-    echo "    未检测到 conda，尝试安装 miniconda..."
-    wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh
-    bash /tmp/miniconda.sh -b -p /opt/conda
-    rm -f /tmp/miniconda.sh
-    CONDA_BIN="/opt/conda/bin/conda"
-    # 初始化 conda
-    "${CONDA_BIN}" init bash 2>/dev/null || true
+if [ -n "${CONDA_BIN}" ]; then
+    CONDA_DIR="$(dirname "$(dirname "${CONDA_BIN}")")"
+    ENV_DIR="${CONDA_DIR}/envs/xiaozhi-esp32-server"
+    if [ -d "${ENV_DIR}" ]; then
+        echo "    检测到 conda 环境: ${ENV_DIR}"
+        sed -i "s|/opt/conda/envs/xiaozhi-esp32-server|${ENV_DIR}|g" /etc/systemd/system/xiaozhi-server.service
+    else
+        echo "    ⚠️  未找到 conda 环境 xiaozhi-esp32-server，请确认已创建"
+    fi
+else
+    echo "    ⚠️  未检测到 conda，请手动修改 xiaozhi-server.service 中的 Python 路径"
 fi
-
-CONDA_DIR="$(dirname "$(dirname "${CONDA_BIN}")")"
-ENV_DIR="${CONDA_DIR}/envs/xiaozhi-esp32-server"
-
-# 创建 conda 环境
-if [ ! -d "${ENV_DIR}" ]; then
-    echo "    创建 conda 环境 xiaozhi-esp32-server (Python 3.10)..."
-    "${CONDA_BIN}" create -n xiaozhi-esp32-server python=3.10 -y
-fi
-
-echo "    安装 conda 依赖 (libopus, ffmpeg)..."
-"${CONDA_BIN}" install -n xiaozhi-esp32-server libopus ffmpeg -y -c conda-forge 2>/dev/null || \
-"${CONDA_BIN}" install -n xiaozhi-esp32-server libopus ffmpeg -y
-
-echo "    安装 pip 依赖..."
-"${ENV_DIR}/bin/pip" install -q -r "${PROJECT_DIR}/main/xiaozhi-server/requirements.txt"
-
-# 更新 service 文件中的 conda 路径
-sed -i "s|/opt/conda/envs/xiaozhi-esp32-server|${ENV_DIR}|g" /etc/systemd/system/xiaozhi-server.service
 
 # ---------- 6. 安装 systemd 服务文件 ----------
 echo "==> 安装 systemd 服务..."
