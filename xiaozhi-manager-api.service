@@ -1,0 +1,18 @@
+[Unit]
+Description=Xiaozhi Manager API (Spring Boot)
+After=network.target mysql.service redis.service
+
+[Service]
+Type=simple
+User=xiaozhi
+Group=xiaozhi
+WorkingDirectory=/opt/xiaozhi-esp32-server/main/manager-api
+ExecStart=/usr/bin/mvn spring-boot:run -Dspring-boot.run.mainClass=xiaozhi.AdminApplication -Dspring-boot.run.profiles=dev
+Restart=on-failure
+RestartSec=15
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=xiaozhi-manager-api
+
+[Install]
+WantedBy=multi-user.target

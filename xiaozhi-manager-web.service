@@ -1,0 +1,21 @@
+[Unit]
+Description=Xiaozhi Manager Web (Vue)
+After=network.target
+
+[Service]
+Type=simple
+User=xiaozhi
+Group=xiaozhi
+WorkingDirectory=/opt/xiaozhi-esp32-server/main/manager-web
+ExecStart=/usr/bin/npm run serve
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=xiaozhi-manager-web
+
+Environment=NODE_ENV=production
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=multi-user.target

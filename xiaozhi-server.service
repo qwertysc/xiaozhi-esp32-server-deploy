@@ -1,0 +1,21 @@
+[Unit]
+Description=Xiaozhi ESP32 Server (Python)
+After=network.target
+
+[Service]
+Type=simple
+User=xiaozhi
+Group=xiaozhi
+WorkingDirectory=/opt/xiaozhi-esp32-server/main/xiaozhi-server
+ExecStart=/opt/xiaozhi-esp32-server/main/xiaozhi-server/.venv/bin/python app.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=xiaozhi-server
+
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/opt/xiaozhi-esp32-server/main/xiaozhi-server/.venv/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=multi-user.target
