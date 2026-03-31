@@ -4,19 +4,28 @@
 
 - JDK 21 + Maven（manager-api）
 - Node.js 18+（manager-web）
-- Python 3.10+（xiaozhi-server）
+- conda + Python 3.10（xiaozhi-server，依赖已装好）
 - MySQL、Redis（manager-api 依赖）
 
 ## 使用方法
 
 ```bash
-# 1. 把项目放到 /opt/xiaozhi-esp32-server
-git clone https://github.com/xinnan-tech/xiaozhi-esp32-server.git /opt/xiaozhi-esp32-server
+# 1. 克隆部署脚本
+git clone https://github.com/qwertysc/xiaozhi-esp32-server-deploy.git
+cd xiaozhi-esp32-server-deploy
 
-# 2. 执行安装脚本
-cd /opt/xiaozhi-esp32-server
-sudo bash install-services.sh
+# 2. 执行安装脚本（项目路径作为参数）
+sudo bash install-services.sh /opt/xiaozhi-esp32-server
+```
 
+脚本会自动：
+- 检测当前登录用户作为服务运行用户
+- 检测 conda 环境路径并写入 service 文件
+- 检查并安装 JDK 21 + Maven
+- 安装 manager-web 的 npm 依赖
+- 安装三个 systemd 服务
+
+```bash
 # 3. 启动服务
 sudo systemctl start xiaozhi-manager-api
 sudo systemctl start xiaozhi-manager-web
@@ -44,9 +53,3 @@ sudo systemctl restart xiaozhi-manager-api
 sudo systemctl restart xiaozhi-manager-web
 sudo systemctl restart xiaozhi-server
 ```
-
-## 自定义项目路径
-
-如果项目不在 `/opt/xiaozhi-esp32-server`，修改：
-1. 三个 `.service` 文件里的 `WorkingDirectory` 和 `ExecStart`
-2. `install-services.sh` 里的 `PROJECT_DIR` 变量
