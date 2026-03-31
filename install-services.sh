@@ -7,24 +7,12 @@ set -euo pipefail
 
 PROJECT_DIR="${1:-/opt/xiaozhi-esp32-server}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SERVICE_USER="xiaozhi"
+SERVICE_USER="${SUDO_USER:-$(whoami)}"
 
 echo "==> 项目目录: ${PROJECT_DIR}"
-echo "==> 服务用户: ${SERVICE_USER}"
+echo "==> 运行用户: ${SERVICE_USER}"
 
-# ---------- 1. 创建用户 ----------
-if ! id "${SERVICE_USER}" &>/dev/null; then
-    echo "==> 创建用户 ${SERVICE_USER}..."
-    useradd --system --shell /usr/sbin/nologin --home-dir "${PROJECT_DIR}" "${SERVICE_USER}"
-else
-    echo "==> 用户 ${SERVICE_USER} 已存在，跳过"
-fi
-
-# ---------- 2. 设置目录权限 ----------
-chown -R "${SERVICE_USER}:${SERVICE_USER}" "${PROJECT_DIR}"
-chmod -R 750 "${PROJECT_DIR}"
-
-# ---------- 3. 安装 manager-api 依赖 ----------
+# ---------- 1. 安装 manager-api 依赖 ----------
 echo "==> 检查 JDK 21..."
 if ! java -version 2>&1 | grep -q "21"; then
     echo "    未检测到 JDK 21，尝试安装..."
@@ -37,14 +25,12 @@ if ! java -version 2>&1 | grep -q "21"; then
     fi
 fi
 
-# ---------- 4. 安装 manager-web 依赖 ----------
+# ---------- 2. 安装 manager-web 依赖 ----------
 echo "==> 安装 manager-web 依赖..."
 su - "${SERVICE_USER}" -s /bin/bash -c "cd ${PROJECT_DIR}/main/manager-web && npm install --production 2>/dev/null || npm install"
 
-# ---------- 5. 安装 xiaozhi-server 依赖 ----------
-echo "==> 跳过 conda/pip 安装（假设已手动完成）"
-
-# 自动检测 conda 环境路径并更新 service 文件
+# ---------- 3. 检测 xiaozhi-server conda 环境 ----------
+echo "==> 检测 conda 环境..."
 CONDA_BIN="$(command -v conda 2>/dev/null || true)"
 if [ -z "${CONDA_BIN}" ]; then
     for p in /root/miniconda3/bin/conda /home/*/miniconda3/bin/conda /opt/conda/bin/conda /root/anaconda3/bin/conda; do
@@ -52,33 +38,44 @@ if [ -z "${CONDA_BIN}" ]; then
     done
 fi
 
+XIAOZHI_PYTHON=""
 if [ -n "${CONDA_BIN}" ]; then
     CONDA_DIR="$(dirname "$(dirname "${CONDA_BIN}")")"
     ENV_DIR="${CONDA_DIR}/envs/xiaozhi-esp32-server"
     if [ -d "${ENV_DIR}" ]; then
+        XIAOZHI_PYTHON="${ENV_DIR}/bin/python"
         echo "    检测到 conda 环境: ${ENV_DIR}"
-        sed -i "s|/opt/conda/envs/xiaozhi-esp32-server|${ENV_DIR}|g" /etc/systemd/system/xiaozhi-server.service
     else
         echo "    ⚠️  未找到 conda 环境 xiaozhi-esp32-server，请确认已创建"
     fi
 else
-    echo "    ⚠️  未检测到 conda，请手动修改 xiaozhi-server.service 中的 Python 路径"
+    echo "    ⚠️  未检测到 conda"
 fi
 
-# ---------- 6. 安装 systemd 服务文件 ----------
+# ---------- 4. 安装 systemd 服务文件 ----------
 echo "==> 安装 systemd 服务..."
 for svc in xiaozhi-manager-api xiaozhi-manager-web xiaozhi-server; do
     cp "${SCRIPT_DIR}/${svc}.service" "/etc/systemd/system/${svc}.service"
+    # 替换用户
+    sed -i "s|^User=.*|User=${SERVICE_USER}|g" "/etc/systemd/system/${svc}.service"
+    sed -i "s|^Group=.*|Group=${SERVICE_USER}|g" "/etc/systemd/system/${svc}.service"
     echo "    ✅ ${svc}.service"
 done
 
+# 更新 xiaozhi-server 的 Python 路径
+if [ -n "${XIAOZHI_PYTHON}" ]; then
+    sed -i "s|/opt/conda/envs/xiaozhi-esp32-server/bin/python|${XIAOZHI_PYTHON}|g" /etc/systemd/system/xiaozhi-server.service
+fi
+
 systemctl daemon-reload
 
-# ---------- 7. 完成 ----------
+# ---------- 5. 完成 ----------
 echo ""
 echo "========================================"
 echo "  ✅ 安装完成"
 echo "========================================"
+echo ""
+echo "运行用户: ${SERVICE_USER}"
 echo ""
 echo "启动服务:"
 echo "  sudo systemctl start xiaozhi-manager-api"

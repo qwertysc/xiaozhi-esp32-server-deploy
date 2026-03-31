@@ -4,8 +4,8 @@ After=network.target mysql.service redis.service
 
 [Service]
 Type=simple
-User=xiaozhi
-Group=xiaozhi
+User=root
+Group=root
 WorkingDirectory=/opt/xiaozhi-esp32-server/main/manager-api
 ExecStart=/usr/bin/mvn spring-boot:run -Dspring-boot.run.mainClass=xiaozhi.AdminApplication -Dspring-boot.run.profiles=dev
 Restart=on-failure

@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-User=xiaozhi
-Group=xiaozhi
+User=root
+Group=root
 WorkingDirectory=/opt/xiaozhi-esp32-server/main/manager-web
 ExecStart=/usr/bin/npm run serve
 Restart=on-failure
