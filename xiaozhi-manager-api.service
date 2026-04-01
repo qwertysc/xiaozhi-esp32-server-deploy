@@ -7,7 +7,7 @@ Type=simple
 User=root
 Group=root
 WorkingDirectory=/opt/xiaozhi-esp32-server/main/manager-api
-ExecStart=/usr/bin/java -Xms256m -Xmx512m -jar /opt/xiaozhi-esp32-server/main/manager-api/target/manager-api.jar --spring.profiles.active=dev
+ExecStart=/usr/bin/java -Xms256m -Xmx512m -Dlogging.level.xiaozhi=INFO -Dlogging.level.root=WARN -jar /opt/xiaozhi-esp32-server/main/manager-api/target/manager-api.jar --spring.profiles.active=dev
 Restart=on-failure
 RestartSec=15
 StandardOutput=journal
