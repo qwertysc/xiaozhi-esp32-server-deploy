@@ -16,7 +16,7 @@ echo "==> 运行用户: ${SERVICE_USER}"
 echo "==> 修正项目目录权限..."
 chown -R "${SERVICE_USER}:${SERVICE_USER}" "${PROJECT_DIR}"
 
-# ---------- 1. 安装 manager-api 依赖 ----------
+# ---------- 1. 安装 manager-api 依赖 + 打包 JAR ----------
 echo "==> 检查 JDK 21..."
 if ! java -version 2>&1 | grep -q "21"; then
     echo "    未检测到 JDK 21，尝试安装..."
@@ -27,6 +27,22 @@ if ! java -version 2>&1 | grep -q "21"; then
     else
         echo "    ⚠️  无法自动安装，请手动安装 JDK 21 和 Maven"
     fi
+fi
+
+echo "==> 打包 manager-api 为 JAR..."
+if command -v mvn &>/dev/null; then
+    cd "${PROJECT_DIR}/main/manager-api"
+    su - "${SERVICE_USER}" -s /bin/bash -c "cd ${PROJECT_DIR}/main/manager-api && mvn clean package -DskipTests -q"
+    ORIGINAL_JAR=$(find "${PROJECT_DIR}/main/manager-api/target" -name "*.jar" -not -name "*original*" -not -name "*sources*" | head -1)
+    if [ -n "${ORIGINAL_JAR}" ]; then
+        cp "${ORIGINAL_JAR}" "${PROJECT_DIR}/main/manager-api/target/manager-api.jar"
+        JAR_SIZE=$(du -h "${PROJECT_DIR}/main/manager-api/target/manager-api.jar" | cut -f1)
+        echo "    ✅ JAR 打包完成 (${JAR_SIZE})"
+    else
+        echo "    ⚠️  JAR 打包失败，服务将无法启动，请手动运行 build-manager-api.sh"
+    fi
+else
+    echo "    ⚠️  未检测到 Maven，跳过打包，服务将无法启动"
 fi
 
 # ---------- 2. 安装 manager-web 依赖 ----------
